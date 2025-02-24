@@ -21,7 +21,7 @@ jobs:
         run: npm install
 
       - name: Rodar testes
-        run: npm test
+        run: node src/test.js
 
   deploy:
     needs: test
@@ -40,9 +40,24 @@ jobs:
       - name: Deploy na EC2
         run: |
           ssh ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
-            cd /home/ubuntu || mkdir /home/ubuntu/app && cd /home/ubuntu/app
-            git clone https://github.com/phfdias88/avaliacao-devops-cr.git || (cd api-chicorei-nodejs && git pull)
-            cd api-chicorei-nodejs
+            set -e
+
+            mkdir -p /home/ubuntu/app
+            cd /home/ubuntu/app
+
+            if [ ! -d "api-chicorei-nodejs" ]; then
+              git clone https://github.com/phfdias88/avaliacao-devops-cr.git api-chicorei-nodejs
+            else
+              cd api-chicorei-nodejs
+              git pull origin main
+            fi
+
+            cd /home/ubuntu/app/api-chicorei-nodejs
+
             npm install
-            nohup node app.js > output.log 2>&1 &
+
+            # Parar processo antigo da API se estiver rodando
+            pkill -f "node src/index.js" || true
+
+            nohup node src/index.js > output.log 2>&1 &
           EOF
