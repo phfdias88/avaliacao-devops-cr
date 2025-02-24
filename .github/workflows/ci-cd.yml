@@ -23,7 +23,9 @@ jobs:
           npm install
 
       - name: Rodar testes
-        run: node src/test.js
+        run: |
+          cd api-chicorei-nodejs
+          node src/test.js
 
   deploy:
     needs: test
