@@ -1,0 +1,48 @@
+name: Deploy Node.js API to EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v3
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Instalar dependências
+        run: npm install
+
+      - name: Rodar testes
+        run: npm test
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v3
+
+      - name: Configurar acesso SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy na EC2
+        run: |
+          ssh ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
+            cd /home/ubuntu || mkdir /home/ubuntu/app && cd /home/ubuntu/app
+            git clone https://github.com/phfdias88/avaliacao-devops-cr.git || (cd avaliacao-devops-cr && git pull)
+            cd avaliacao-devops-cr
+            npm install
+            nohup node app.js > output.log 2>&1 &
+          EOF
