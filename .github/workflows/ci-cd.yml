@@ -18,7 +18,9 @@ jobs:
           node-version: 18
 
       - name: Instalar dependências
-        run: npm install
+        run: |
+          cd api-chicorei-nodejs
+          npm install
 
       - name: Rodar testes
         run: node src/test.js
@@ -54,10 +56,16 @@ jobs:
 
             cd /home/ubuntu/app/api-chicorei-nodejs
 
+            # Verificar se o package.json existe
+            if [ ! -f package.json ]; then
+              echo "Erro: package.json não encontrado!"
+              exit 1
+            fi
+
+            # Instalar dependências
             npm install
 
-            # Parar processo antigo da API se estiver rodando
+            # Parar API antiga e rodar novamente
             pkill -f "node src/index.js" || true
-
             nohup node src/index.js > output.log 2>&1 &
           EOF
